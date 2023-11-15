@@ -3,6 +3,7 @@ class Group:
         self.name = name
         self.members = []
         self.leader = leader
+        self.relations = {}
 
     def add_member(self, agent):
         self.members.append(agent)

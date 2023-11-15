@@ -1,0 +1,67 @@
+{
+    "traits": [
+      {
+        "name": "Explorer",
+        "description": "Enjoys discovering new areas and learning about unknown territories."
+      },
+      {
+        "name": "Socializer",
+        "description": "Prefers interacting with others and building social networks."
+      },
+      {
+        "name": "Builder",
+        "description": "Finds satisfaction in creating structures or crafting items."
+      },
+      {
+        "name": "Leader",
+        "description": "Naturally takes charge and excels in guiding others."
+      },
+      {
+        "name": "Innovator",
+        "description": "Loves to come up with new ideas and creative solutions."
+      }
+    ],
+    "goal_descriptions": [
+      {
+        "trait": "Explorer",
+        "goals": [
+          "Discover a new region of the environment",
+          "Map an unexplored territory",
+          "Find a hidden resource"
+        ]
+      },
+      {
+        "trait": "Socializer",
+        "goals": [
+          "Make a new friend",
+          "Organize a group event",
+          "Resolve a conflict between other agents"
+        ]
+      },
+      {
+        "trait": "Builder",
+        "goals": [
+          "Construct a new building",
+          "Craft a useful tool",
+          "Repair a damaged structure"
+        ]
+      },
+      {
+        "trait": "Leader",
+        "goals": [
+          "Lead a team to complete a project",
+          "Make a significant decision for the group",
+          "Resolve a crisis situation"
+        ]
+      },
+      {
+        "trait": "Innovator",
+        "goals": [
+          "Develop a new technique or method",
+          "Solve a complex problem",
+          "Invent something unique"
+        ]
+      }
+    ]
+  }
+  
