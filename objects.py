@@ -18,9 +18,6 @@ class Object:
         else:
             raise NameError('Attempted to apply_effect with no Effect object: ' + effect)
         
-    
-
-
 class Event(Object):
     def __init__(self, name,  description, quality, event_type, frequency, impact, duration):
         super().__init__(name, description, quality)

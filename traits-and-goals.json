@@ -1,67 +1,102 @@
 {
-    "traits": [
+  "Explorer": {
+    "description": "Enjoys discovering new areas and learning about unknown territories.",
+    "goals": [
       {
-        "name": "Explorer",
-        "description": "Enjoys discovering new areas and learning about unknown territories."
+        "description": "Discover a new region of the environment",
+        "type": "exploration",
+        "target": "new_region"
       },
       {
-        "name": "Socializer",
-        "description": "Prefers interacting with others and building social networks."
+        "description": "Map an unexplored territory",
+        "type": "mapping",
+        "target": "unexplored_territory"
       },
       {
-        "name": "Builder",
-        "description": "Finds satisfaction in creating structures or crafting items."
-      },
-      {
-        "name": "Leader",
-        "description": "Naturally takes charge and excels in guiding others."
-      },
-      {
-        "name": "Innovator",
-        "description": "Loves to come up with new ideas and creative solutions."
+        "description": "Find a hidden resource",
+        "type": "resource_discovery",
+        "target": "hidden_resource"
       }
-    ],
-    "goal_descriptions": [
+    ]
+  },
+  "Socializer": {
+    "description": "Prefers interacting with others and building social networks.",
+    "goals": [
       {
-        "trait": "Explorer",
-        "goals": [
-          "Discover a new region of the environment",
-          "Map an unexplored territory",
-          "Find a hidden resource"
-        ]
+        "description": "Make a new friend",
+        "type": "social",
+        "target": "new_friend"
       },
       {
-        "trait": "Socializer",
-        "goals": [
-          "Make a new friend",
-          "Organize a group event",
-          "Resolve a conflict between other agents"
-        ]
+        "description": "Organize a group event",
+        "type": "event_organizing",
+        "target": "group_event"
       },
       {
-        "trait": "Builder",
-        "goals": [
-          "Construct a new building",
-          "Craft a useful tool",
-          "Repair a damaged structure"
-        ]
+        "description": "Resolve a conflict between other agents",
+        "type": "conflict_resolution",
+        "target": "agent_conflict"
+      }
+    ]
+  },
+  "Builder": {
+    "description": "Finds satisfaction in creating structures or crafting items.",
+    "goals": [
+      {
+        "description": "Construct a new building",
+        "type": "construction",
+        "target": "new_building"
       },
       {
-        "trait": "Leader",
-        "goals": [
-          "Lead a team to complete a project",
-          "Make a significant decision for the group",
-          "Resolve a crisis situation"
-        ]
+        "description": "Craft a useful tool",
+        "type": "crafting",
+        "target": "useful_tool"
       },
       {
-        "trait": "Innovator",
-        "goals": [
-          "Develop a new technique or method",
-          "Solve a complex problem",
-          "Invent something unique"
-        ]
+        "description": "Repair a damaged structure",
+        "type": "repair",
+        "target": "damaged_structure"
+      }
+    ]
+  },
+  "Leader": {
+    "description": "Naturally takes charge and excels in guiding others.",
+    "goals": [
+      {
+        "description": "Lead a team to complete a project",
+        "type": "leadership",
+        "target": "team_project"
+      },
+      {
+        "description": "Make a significant decision for the group",
+        "type": "decision_making",
+        "target": "group_decision"
+      },
+      {
+        "description": "Resolve a crisis situation",
+        "type": "crisis_management",
+        "target": "crisis_situation"
+      }
+    ]
+  },
+  "Innovator": {
+    "description": "Loves to come up with new ideas and creative solutions.",
+    "goals": [
+      {
+        "description": "Develop a new technique or method",
+        "type": "innovation",
+        "target": "new_technique"
+      },
+      {
+        "description": "Solve a complex problem",
+        "type": "problem_solving",
+        "target": "complex_problem"
+      },
+      {
+        "description": "Invent something unique",
+        "type": "invention",
+        "target": "unique_invention"
       }
     ]
   }
-  
+}

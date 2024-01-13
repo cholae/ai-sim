@@ -1,14 +1,16 @@
 from objects import Object;
+from goal import Goal;
 import random;
 import names;
 
 class Agent:
-    def __init__(self, name=None, description="", sex=None, age=None, health=None, alignment=None, location=None, random_init=False):
+    def __init__(self, name=None, description="", sex=None, age=None, trait=None, health=None, alignment=None, location=None, random_init=False):
         if random_init:
             self.randomize_agent()
         else:
             self.name = name
             self.description = description
+            self.trait = trait
             self.sex = sex
             self.age = age                 # e.g., 24
             self.health = health           # e.g., "healthy", "sick", "injured"
@@ -19,7 +21,8 @@ class Agent:
             self.agent_relations = {}
             self.event_memory = []
             
-            # Goals
+            # Traits and Goals
+            self.trait = None
             self.current_goal = None
             self.long_term_goals = []
 
@@ -53,8 +56,8 @@ class Agent:
         self.event_memory = []
         
         # Goals
-        self.current_goal = None
-        self.goals = {}
+        self.trait = self.assign_random_trait()
+        self.current_goal = Goal.assign_goal_based_on_trait(self)
 
         self.location = "Greenrest"
         
@@ -70,8 +73,20 @@ class Agent:
 
     def describe(self):
         #todo, check relations and if you know more, otherwise inform agent that you do not know the information
-        return f"{self.description} They have a current goal of {self.current_goal}."
+        return f"{self.description} Traits: {self.traits} They have a current goal of {self.current_goal}."
     
+    def assign_random_trait(self, filename="traits-and-goals.json"):
+        # Load trait-goal data
+        trait_goals = Goal.load_trait_goals(filename)
+        
+        # Extract the list of traits (keys of the dictionary)
+        traits = list(trait_goals.keys())
+        # Randomly select a trait
+        selected_trait = random.choice(traits)
+
+        # Assign the selected trait to the agent
+        return selected_trait
+
     def link_event(self, obj):
         self.event_memory[obj.name] = obj
     
@@ -132,22 +147,16 @@ class Agent:
         curVoteMember.add_interaction(self, Interaction("Voted for me during an election", .05))
         return curVoteMember
     
-    def evaluate_goals(self, timestep):
-        # Logic to evaluate progress towards each goal
-        # For example, checking if certain conditions are met
-        for goal in self.goals:
-            goal.evaluate(self, timestep)
+    # def take_action(self, timestep):
+    #     # Evaluate goals at each step
+    #     self.evaluate_goals(timestep)
 
-    def take_action(self, timestep):
-        # Evaluate goals at each step
-        self.evaluate_goals(timestep)
-
-        # Select action based on current goals
-        if self.current_goal:
-            action = self.current_goal.action()
-            print(f"{self.name} takes action '{action}'")
-        #else:
-            #print(f"{self.name} has no goal and takes no action")
+    #     # Select action based on current goals
+    #     if self.current_goal:
+    #         action = self.current_goal.action()
+    #         print(f"{self.name} takes action '{action}'")
+    #     else:
+    #         print(f"{self.name} has no goal and takes no action")
 
 
 class Interaction():
