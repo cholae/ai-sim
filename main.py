@@ -1,10 +1,10 @@
-from environment import Environment;
-from objects import Object, Event, Resource, Effect;
-from agent import Agent, Interaction;
-from group import Group;
-from timeStep import TimeStep;
-from goal import Goal;
-from gui import GUI;
+from Scripts.environment import Environment;
+from Scripts.objects import Object, Event, Resource, Effect;
+from Scripts.agent import Agent, Interaction;
+from Scripts.group import Group;
+from Scripts.timeStep import TimeStep;
+from Scripts.goal import Goal;
+from Scripts.gui import GUI;
 import random
 
 

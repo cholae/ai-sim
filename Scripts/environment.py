@@ -1,4 +1,4 @@
-from objects import Object
+from Scripts.objects import Object
 
 class Environment:
     def __init__(self, name, age_in_years, population):

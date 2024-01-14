@@ -1,5 +1,5 @@
-from objects import Object;
-from goal import Goal;
+from Scripts.objects import Object;
+from Scripts.goal import Goal;
 import random;
 import names;
 
