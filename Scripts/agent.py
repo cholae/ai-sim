@@ -14,7 +14,7 @@ class Agent:
             self.sex = sex
             self.age = age                 # e.g., 24
             self.health = health           # e.g., "healthy", "sick", "injured"
-            self.alignment = alignment       # e.g., -1 to 1 from evil to good
+            self.alignment = alignment     # e.g., -1 to 1 from evil to good
 
             # Knowledge
             self.resource_map = {}
