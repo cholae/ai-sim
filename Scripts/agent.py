@@ -2,6 +2,8 @@ from Scripts.objects import Object;
 from Scripts.goal import Goal;
 import random;
 import names;
+import ollama;
+import json;
 
 class Agent:
     def __init__(self, name=None, description="", sex=None, age=None, trait=None, health=None, alignment=None, location=None, random_init=False):
@@ -48,7 +50,7 @@ class Agent:
         self.age = random.randint(18,45)
         self.health = "healthy"
         self.alignment = random.uniform(-1,1)
-        self.description = f'This is {self.name}, a {self.age} year old {self.health} {self.sex}.'
+        self.description = f'You are {self.name}, a {self.age} year old {self.health} {self.sex}.'
 
         # Knowledge
         self.resource_map = {}
@@ -73,7 +75,7 @@ class Agent:
 
     def describe(self):
         #todo, check relations and if you know more, otherwise inform agent that you do not know the information
-        return f"{self.description} Traits: {self.traits} They have a current goal of {self.current_goal}."
+        return f"{self.description} Traits: [{self.trait}] You have the current goal of {self.current_goal.description}."
     
     def assign_random_trait(self, filename="traits-and-goals.json"):
         # Load trait-goal data
@@ -90,15 +92,14 @@ class Agent:
     def link_event(self, obj):
         self.event_memory[obj.name] = obj
     
-    def link_agent(self, agent, rr=0.0):
+    def link_agent(self, agent):
         if self.is_agent_linked(agent):
-            print('already linked')
+            return
         else:
-            print(f"linking {agent.name} to {self.name}")
             self.agent_relations[agent.name] = {
                                                 "relation": "neutral",
-                                                "relation_rating": rr,
-                                                "interactions": ["Initial Meeting"] 
+                                                "relation_rating": 0,
+                                                "interactions": []
                                             }
             agent.link_agent(self)
         
@@ -106,19 +107,36 @@ class Agent:
         return self.agent_relations.__contains__(agent.name)
     
     def add_interaction(self, agent, interaction):
+        self.link_agent(agent)
+        interactionPrompt = f"""You are {self.describe()} having an interaction with {agent.describe()}. Your current relationship is {self.agent_relations[agent.name].get("relation", "You haven't met")}. Your interaction: {interaction.description} Respond in JSON with the following attributes: 
+                {{
+                    relationshipChange: value on a scale between -0.25 and 0.25 where .25 means a perfect positive interaction, 0 means you were indifferent to this interaction, and -.25 means you hated the interaction.
+                    description: a short description of why the interaction was positive or negative.
+                }}"""
         try:
-            self.agent_relations[agent.name]["relation_rating"] += interaction.relation_impact
-            rr = self.agent_relations[agent.name]["relation_rating"]
-            if rr >= .5:
-                self.agent_relations[agent.name]["relation"] = "friends"
-            elif rr < .5 and rr >= 0:
-                self.agent_relations[agent.name]["relation"] = "neutral"
-            else:
-                self.agent_relations[agent.name]["relation"] = "enemies"
+            response = ollama.generate(
+            model='mistral-openorca', 
+            prompt=interactionPrompt,
+            format="json",
+            stream=False)
+            response_data = json.loads(response['response'])
+            print(response_data)
+        except ollama.ResponseError as e:
+            print('Error:', e.error)
+    
+        self.agent_relations[agent.name]["relation_rating"] += response_data["relationshipChange"]
+        rr = self.agent_relations[agent.name]["relation_rating"]
+        if rr >= .5:
+            self.agent_relations[agent.name]["relation"] = "friends"
+        elif rr < .5 and rr >= -0.1:
+            self.agent_relations[agent.name]["relation"] = "indifferent"
+        elif rr < -0.1 and rr >= -.5:
+                self.agent_relations[agent.name]["relation"] = "adversary"
+        else:
+            self.agent_relations[agent.name]["relation"] = "foe"
 
-            self.agent_relations[agent.name]["interactions"].append(interaction.description)
-        except KeyError:
-            self.link_agent(agent, interaction.relation_impact)
+        self.agent_relations[agent.name]["interactions"].append(response_data["description"])
+            
 
     #voting mechanism for groups
     def vote(self, members):
@@ -144,7 +162,7 @@ class Agent:
             if curRel: #if relationship exists check rating
                 if curRel["relation_rating"] > self.agent_relations[curVoteMember.name]["relation_rating"]:
                     curVoteMember = member
-        curVoteMember.add_interaction(self, Interaction("Voted for me during an election", .05))
+        curVoteMember.add_interaction(self, Interaction("Voted for me during an election"))
         return curVoteMember
     
     # def take_action(self, timestep):
@@ -160,6 +178,5 @@ class Agent:
 
 
 class Interaction():
-    def __init__(self, description, relation_impact):
+    def __init__(self, description):
         self.description = description
-        self.relation_impact = relation_impact
