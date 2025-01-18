@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { Goal } from "./goal";
+import { Relationship } from './relationship';
 
 export class Agent {
   name!: string;
@@ -8,7 +9,7 @@ export class Agent {
   age!: number;
   trait: string | null = null;
   currentLocation!: string;
-  agentRelations: Record<string, number> = {};
+  agentRelations: Record<string, Relationship> = {};
   eventMemory: string[] = [];
   currentGoal: Goal | null = null;
 
@@ -56,11 +57,7 @@ export class Agent {
   
   linkAgent(agent: Agent): void {
     if (!this.agentRelations[agent.name]) {
-      this.agentRelations[agent.name] = {
-        relation: "neutral",
-        relationRating: 0,
-        interactions: [],
-      };
+      this.agentRelations[agent.name] = new Relationship("indifferent to", 0);
       agent.linkAgent(this); // Ensure bidirectional relationship
     }
   }

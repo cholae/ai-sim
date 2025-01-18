@@ -5,11 +5,14 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^9.4.0",
+    "@types/express": "^5.0.0",
+    "express": "^4.21.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "build": "tsc"
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts"
   }
 }
