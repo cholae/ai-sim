@@ -3,17 +3,17 @@
     "description": "Enjoys discovering new areas and learning about unknown territories.",
     "goals": [
       {
-        "description": "Discover a new region of the environment",
+        "description": "discover a new region of the environment",
         "type": "exploration",
         "target": "new_region"
       },
       {
-        "description": "Map an unexplored territory",
+        "description": "map an unexplored territory",
         "type": "mapping",
         "target": "unexplored_territory"
       },
       {
-        "description": "Find a hidden resource",
+        "description": "find a hidden resource",
         "type": "resource_discovery",
         "target": "hidden_resource"
       }
@@ -23,17 +23,17 @@
     "description": "Prefers interacting with others and building social networks.",
     "goals": [
       {
-        "description": "Make a new friend",
+        "description": "make a new friend",
         "type": "social",
         "target": "new_friend"
       },
       {
-        "description": "Organize a group event",
+        "description": "organize a group event",
         "type": "event_organizing",
         "target": "group_event"
       },
       {
-        "description": "Resolve a conflict between other agents",
+        "description": "resolve a conflict between other agents",
         "type": "conflict_resolution",
         "target": "agent_conflict"
       }
@@ -43,17 +43,17 @@
     "description": "Finds satisfaction in creating structures or crafting items.",
     "goals": [
       {
-        "description": "Construct a new building",
+        "description": "construct a new building",
         "type": "construction",
         "target": "new_building"
       },
       {
-        "description": "Craft a useful tool",
+        "description": "craft a useful tool",
         "type": "crafting",
         "target": "useful_tool"
       },
       {
-        "description": "Repair a damaged structure",
+        "description": "repair a damaged structure",
         "type": "repair",
         "target": "damaged_structure"
       }
@@ -63,17 +63,17 @@
     "description": "Naturally takes charge and excels in guiding others.",
     "goals": [
       {
-        "description": "Lead a team to complete a project",
+        "description": "lead a team to complete a project",
         "type": "leadership",
         "target": "team_project"
       },
       {
-        "description": "Make a significant decision for the group",
+        "description": "make a significant decision for the group",
         "type": "decision_making",
         "target": "group_decision"
       },
       {
-        "description": "Resolve a crisis situation",
+        "description": "resolve a crisis situation",
         "type": "crisis_management",
         "target": "crisis_situation"
       }
@@ -83,17 +83,17 @@
     "description": "Loves to come up with new ideas and creative solutions.",
     "goals": [
       {
-        "description": "Develop a new technique or method",
+        "description": "develop a new technique or method",
         "type": "innovation",
         "target": "new_technique"
       },
       {
-        "description": "Solve a complex problem",
+        "description": "solve a complex problem",
         "type": "problem_solving",
         "target": "complex_problem"
       },
       {
-        "description": "Invent something unique",
+        "description": "invent something unique",
         "type": "invention",
         "target": "unique_invention"
       }

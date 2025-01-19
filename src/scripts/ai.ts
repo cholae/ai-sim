@@ -7,15 +7,18 @@ export class AI {
     this.model = model;
   }
 
-  async generateResponse(prompt: string): Promise<string> {
+  async generateInteraction(prompt: string): Promise<string> {
     try {
-      const response = await ollama.chat({
+      const response = await ollama.generate({
         model: this.model,
-        messages: [{ role: "user", content: prompt }],
+        prompt: prompt,
+        format: "json",
+        raw: true,
+        stream: false
       });
 
       // Extract and return the message content
-      return response.message.content;
+      return JSON.parse(response.response);
     } catch (error) {
       console.error("Error generating response:", error);
       throw new Error("Failed to generate a response from Ollama.");

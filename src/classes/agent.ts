@@ -1,8 +1,12 @@
 import { faker } from '@faker-js/faker';
 import { Goal } from "./goal";
 import { Relationship } from './relationship';
+import { Memory } from './memory';
+import { RelationshipType } from '../enums/relationshipType';
+import { v4 as uuid } from 'uuid';
 
 export class Agent {
+  id!: string;
   name!: string;
   description: string = "";
   sex!: "male" | "female";
@@ -13,21 +17,32 @@ export class Agent {
   eventMemory: string[] = [];
   currentGoal: Goal | null = null;
 
-  constructor(
-    name: string,
-    description: string = "",
-    sex: "male" | "female",
-    age: number,
-    trait: string | null = null,
-    location: string,
-    randomInit: boolean = false
-  ) {
+  constructor({
+    id = uuid(),
+    name = null,
+    description = "",
+    sex = null,
+    age = 0,
+    trait = null,
+    location = "",
+    randomInit = false,
+  }: {
+    id?: string;
+    name?: string | null;
+    description?: string;
+    sex?: "male" | "female" | null;
+    age?: number;
+    trait?: string | null;
+    location?: string;
+    randomInit?: boolean;
+  } = {}) {
     if (randomInit) {
       this.randomizeAgent();
     } else {
-      this.name = name;
+      this.id = id;
+      this.name = name!;
       this.description = description;
-      this.sex = sex;
+      this.sex = sex!;
       this.age = age;
       this.currentLocation = location;
       this.trait = trait;
@@ -35,38 +50,57 @@ export class Agent {
   }
 
   randomizeAgent(): void {
+    this.id = uuid()
     this.sex = faker.person.sex() as "male" | "female";
-    this.name = faker.person.fullName({sex: this.sex}); // Replace with a valid `names` library method
+    this.name = faker.person.fullName({sex: this.sex});
     this.age = Math.floor(Math.random() * (45 - 18 + 1)) + 18;
     this.description = `You are ${this.name}, a ${this.age}-year-old ${this.sex}.`;
     this.trait = this.assignRandomTrait();
-    this.currentGoal = Goal.assignGoalBasedOnTrait(this); // Assumes Goal is a global or imported object
+    this.currentGoal = Goal.assignGoalBasedOnTrait(this);
   }
 
   assignRandomTrait(filename: string = "traits-and-goals.json"): string {
-    const traitGoals = Goal.loadTraitGoals(filename); // Assumes Goal is a global or imported object
+    const traitGoals = Goal.loadTraitGoals(filename);
     const traits = Object.keys(traitGoals);
     return traits[Math.floor(Math.random() * traits.length)];
   }
 
   describe(): string {
-    return `${this.description} Traits: [${this.trait}] You have the current goal of ${
+    return `${this.description} Your personality traits are: [${this.trait}]. You have the current goal of ${
       this.currentGoal?.description ?? "none"
     }.`;
   }
   
   linkAgent(agent: Agent): void {
-    if (!this.agentRelations[agent.name]) {
-      this.agentRelations[agent.name] = new Relationship("indifferent to", 0);
-      agent.linkAgent(this); // Ensure bidirectional relationship
+    if (!this.agentRelations[agent.id]) {
+      this.agentRelations[agent.id] = new Relationship(RelationshipType.Indifferent, 0)
+    }
+    if(!agent.agentRelations[this.id]){
+      agent.agentRelations[this.id] = new Relationship(RelationshipType.Indifferent, 0)
     }
   }
 
-  /**
-   * Voting logic where the agent chooses a candidate based on relationship ratings.
-   * @param candidates - List of candidates for the vote.
-   * @returns The chosen agent.
-   */
+  updateRelationship(agent: Agent , interactionResponse:any): void{
+    const currentRelation = this.agentRelations[agent.id];
+    currentRelation.relationRating = Math.min(100, Math.max(-100, currentRelation.relationRating + interactionResponse[this.id].relationshipChange));
+    currentRelation.relation = this.calculateRelation(currentRelation.relationRating) as RelationshipType;
+    currentRelation.addNewMemory(interactionResponse.description,interactionResponse[this.id].memoryStrength);
+  }
+
+  determineAction(){
+    return "interaction";
+  }
+
+  private calculateRelation(relationRating: number): string {
+    if (relationRating <= -75) return "abhor";
+    if (relationRating <= -50) return "hate";
+    if (relationRating <= -25) return "dislike";
+    if (relationRating <= 24) return "are indifferent to";
+    if (relationRating <= 49) return "like";
+    if (relationRating <= 74) return "are fond of";
+    return "emotionally invested in";
+  }
+
   vote(candidates: Agent[]): Agent {
     const weightedCandidates: { candidate: Agent; weight: number }[] = candidates.map(candidate => {
       const relationData = this.agentRelations[candidate.name];
