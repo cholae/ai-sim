@@ -37,45 +37,43 @@ export class Interaction implements Action{
         return `
                 Name: ${agentA.name}
                 Id: ${agentA.id}
-                Description: ${agentA.description}
+                Description: ${agentA.describe()}
                 Relationship with ${agentB.name}: You ${agentA.agentRelations[agentB.id].relation} them
                 Memories of ${agentB.name}:
                 ${agentAMemories}
     
                 Name: ${agentB.name}
                 Id: ${agentB.id}
-                Description: ${agentB.description}
+                Description: ${agentB.describe()}
                 Relationship with ${agentA.name}: You ${agentB.agentRelations[agentA.id].relation} them
                 Memories of ${agentA.name}:
                 ${agentBMemories}
     
                 Relationship Context:
-                    - A Relationship between two people ranges from -100 to 100.
-                    - A value of -100 indicates the strongest possible negative relationship (e.g., this person murdered my love one, this person is a convicted arsonist).
-                    - A value of 100 indicates the strongest possible positive relationship (e.g., deep friendship or love).
-                    - A value of 0 indicates that these people just met, or are indifferent to each other.
-                    - At 25, people become friends.
-                    - At -25, people dislike each other.
                     - You are to provide a 'relationship change value' that describes how the current interaction effects the relationship of these two people.
+                    - A Relationship between two people ranges from negative 100 to positive 100.
+                    - +100 would indicate a strong friendship or love - this cannot happen in one meeting.
                     - Relationship Change Value example 1: "PersonA attempted to murder PersonB" would give PersonB a -100 change in relationship to personA.
                     - Relationship Change Value example 2: "PersonA helped me find an answer to my current relationship problems" may provide 1-5 in positive change.
     
                 Task:
-                Summarize an interaction between ${agentA.name} and ${agentB.name}. 
+                Provide data on an interaction between ${agentA.name} and ${agentB.name}, calculating if people achieved their current goal, and how their relationship changed with the person they are interacting with.
                 For example, this might involve a conversation, a shared activity, or a conflict. 
                 Use their personality traits, memories of the person, relationship with the person, and current goals to determine what the interaction is and how it goes.
     
                 Output:
                 Provide the response in the following JSON format:
                 {
-                    "description": "A concise but detailed summary of the interaction, and your reasoning for the relationshipChange value you provided.",
+                    "description": "One sentence summarizing the interaction, the reasoning for any completion of a person's goal in one sentence, and your reasoning for the relationshipChange value you provided.",
                     "${agentA.id}": {
                         relationshipChange: <a number - relationship change value describing personA's change in relation with personB>,
-                        memoryStrength: <a number - absolute value of personA's relationshipChangeValue>
+                        memoryStrength: <a number - absolute value of personA's relationshipChangeValue>,
+                        achievedGoal: true/false - did this person achieve their current goal?
                     },
                     "${agentB.id}": {
                         relationshipChange: <a number - relationship change value describing personB's change in relation with personA>,
                         memoryStrength: <a number - absolute value of personB's relationshipChangeValue>
+                        achievedGoal: true/false - did this person achieve their current goal?
                     }
                 }
             `;

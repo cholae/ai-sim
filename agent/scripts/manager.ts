@@ -16,7 +16,7 @@ export class Manager{
         this.agents = agents;
     }
     
-    progressDay(): void {
+    async progressDay(): Promise<void> {
         console.log(`Day ${this.currentDay + 1} begins.`);
         let interactingAgents =  this.determineAgentActions();
 
@@ -24,7 +24,7 @@ export class Manager{
 
         while (this.actionQueue.length > 0) {
             const action = this.actionQueue.shift()!;
-            action.execute(this.ai);
+            await action.execute(this.ai);
         }
 
         this.currentDay++;
@@ -45,15 +45,21 @@ export class Manager{
     }
     
     private queueDailyInteractions(agents: Agent[]): void {
-        while (agents.length > 1) {
+        let remainingAgentCount = agents.length;
+        while (remainingAgentCount > 1) {
             const agentA = agents.pop()!;
-            const agentB = agents.pop()!;
+            remainingAgentCount--;
+        
+            const randomIndex = Math.floor(Math.random() * remainingAgentCount);
+            const agentB = agents.splice(randomIndex, 1)[0];
+            remainingAgentCount--;
+        
+            // Add the interaction
             this.addAction(new Interaction(agentA, agentB));
         }
     
         // Handle case where there's one leftover agent
-        if (agents.length === 1) {
-            console.warn(`Agent ${agents[0].name} was not able to find an interaction partner.`);
+        if (remainingAgentCount === 1) {
             agents.pop();
         }
     }

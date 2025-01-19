@@ -16,6 +16,7 @@ export class Agent {
   agentRelations: Record<string, Relationship> = {};
   eventMemory: string[] = [];
   currentGoal: Goal | null = null;
+  completedGoals: Goal[] = [];
 
   constructor({
     id = uuid(),
@@ -85,6 +86,11 @@ export class Agent {
     currentRelation.relationRating = Math.min(100, Math.max(-100, currentRelation.relationRating + interactionResponse[this.id].relationshipChange));
     currentRelation.relation = this.calculateRelation(currentRelation.relationRating) as RelationshipType;
     currentRelation.addNewMemory(interactionResponse.description,interactionResponse[this.id].memoryStrength);
+
+    if(interactionResponse[this.id].achievedGoal == 'true' || interactionResponse[this.id].achievedGoal == true){
+      this.completedGoals.push(this.currentGoal!);
+      this.currentGoal = Goal.assignGoalBasedOnTrait(this);
+    }
   }
 
   determineAction(){
