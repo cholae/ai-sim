@@ -16,8 +16,9 @@ export class Manager{
         this.agents = agents;
     }
     
-    async progressDay(): Promise<void> {
-        console.log(`Day ${this.currentDay + 1} begins.`);
+    async progressDay(): Promise<Agent[]> {
+        this.currentDay++;
+        console.log(`Day ${this.currentDay} begins.`);
         let interactingAgents =  this.determineAgentActions();
 
         this.queueDailyInteractions(interactingAgents)
@@ -26,9 +27,12 @@ export class Manager{
             const action = this.actionQueue.shift()!;
             await action.execute(this.ai);
         }
+       
+        return this.agents;
+    }
 
-        this.currentDay++;
-
+    getCurrentDay(): number {
+        return this.currentDay;
     }
 
     private determineAgentActions(): Agent[] {

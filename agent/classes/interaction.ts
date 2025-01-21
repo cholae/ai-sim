@@ -35,47 +35,47 @@ export class Interaction implements Action{
             .join("\n");
     
         return `
-                Name: ${agentA.name}
-                Id: ${agentA.id}
-                Description: ${agentA.describe()}
-                Relationship with ${agentB.name}: You ${agentA.agentRelations[agentB.id].relation} them
-                Memories of ${agentB.name}:
-                ${agentAMemories}
-    
-                Name: ${agentB.name}
-                Id: ${agentB.id}
-                Description: ${agentB.describe()}
-                Relationship with ${agentA.name}: You ${agentB.agentRelations[agentA.id].relation} them
-                Memories of ${agentA.name}:
-                ${agentBMemories}
-    
-                Relationship Context:
-                    - You are to provide a 'relationship change value' that describes how the current interaction effects the relationship of these two people.
-                    - A Relationship between two people ranges from negative 100 to positive 100.
-                    - +100 would indicate a strong friendship or love - this cannot happen in one meeting.
-                    - Relationship Change Value example 1: "PersonA attempted to murder PersonB" would give PersonB a -100 change in relationship to personA.
-                    - Relationship Change Value example 2: "PersonA helped me find an answer to my current relationship problems" may provide 1-5 in positive change.
-    
-                Task:
-                Provide data on an interaction between ${agentA.name} and ${agentB.name}, calculating if people achieved their current goal, and how their relationship changed with the person they are interacting with.
-                For example, this might involve a conversation, a shared activity, or a conflict. 
-                Use their personality traits, memories of the person, relationship with the person, and current goals to determine what the interaction is and how it goes.
-    
-                Output:
-                Provide the response in the following JSON format:
-                {
-                    "description": "One sentence summarizing the interaction, the reasoning for any completion of a person's goal in one sentence, and your reasoning for the relationshipChange value you provided.",
-                    "${agentA.id}": {
-                        relationshipChange: <a number - relationship change value describing personA's change in relation with personB>,
-                        memoryStrength: <a number - absolute value of personA's relationshipChangeValue>,
-                        achievedGoal: true/false - did this person achieve their current goal?
-                    },
-                    "${agentB.id}": {
-                        relationshipChange: <a number - relationship change value describing personB's change in relation with personA>,
-                        memoryStrength: <a number - absolute value of personB's relationshipChangeValue>
-                        achievedGoal: true/false - did this person achieve their current goal?
-                    }
-                }
+        Agent A:
+        - Name: ${agentA.name}
+        - Id: ${agentA.id}
+        - Description: ${agentA.describe()}
+        - Relationship with ${agentB.name}: You ${agentA.agentRelations[agentB.id].relation} them.
+        - Memories of ${agentB.name}: ${agentAMemories}
+        
+        Agent B:
+        - Name: ${agentB.name}
+        - Id: ${agentB.id}
+        - Description: ${agentB.describe()}
+        - Relationship with ${agentA.name}: You ${agentB.agentRelations[agentA.id].relation} them.
+        - Memories of ${agentA.name}: ${agentBMemories}
+        
+        ### Context:
+        - The relationship score between two agents ranges from -100 to +100. A +100 indicates strong love or friendship, while -100 indicates extreme hatred. These changes should occur gradually and not be extreme in one interaction.
+        - Use each agent's personality traits, memories, and goals to simulate the interaction and determine outcomes.
+        - For each interaction, calculate:
+          1. **Relationship Change Value:** How the interaction affects the relationship score.
+          2. **Memory Strength:** Use the absolute value of the Relationship Change Value.
+          3. **Achieved Goal:** Indicate if the agent achieved their current goal.
+        
+        ### Task:
+        Describe an interaction between ${agentA.name} and ${agentB.name} (e.g., conversation, activity, or conflict). Use their traits and context to decide the outcome.
+        
+        ### Output Format:
+        \`\`\`json
+        {
+          "description": "Summarize the interaction, reasoning for goal achievement, and relationship change.",
+          "${agentA.id}": {
+            "relationshipChange": <number>,
+            "memoryStrength": <absolute value of relationshipChange>,
+            "achievedGoal": true/false
+          },
+          "${agentB.id}": {
+            "relationshipChange": <number>,
+            "memoryStrength": <absolute value of relationshipChange>,
+            "achievedGoal": true/false
+          }
+        }
+        
             `;
     }
 }
