@@ -1,47 +1,71 @@
-import React, { useEffect, useState } from "react";
-import AgentCard from "./AgentCard";
+import { useEffect } from "react";
 import { Agent } from "../interfaces/Agent";
+import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { AppDispatch, RootState } from "../store/store";
+import { setAgents } from "../store/agentSlice";
 
-const AgentList: React.FC = () => {
-  const [agents, setAgents] = useState<Agent[]>([]);
+const AgentList = () => {
+  const agents = useSelector((state: RootState) => state.agents.agents); // Load agents from Redux
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
-  useEffect(() => {
-    // Replace this URL with your actual API endpoint
-    const fetchAgents = async () => {
-      try {
-        const response = await fetch("http://localhost:4000/api/start");
-        const data: Agent[] = await response.json();
-        setAgents(data);
-      } catch (error) {
-        console.error("Failed to fetch agents:", error);
-      }
-    };
+  const handleGenerateAgents = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/generate");
+      const data: Agent[] = await response.json();
+      dispatch(setAgents(data)); // Store agents in Redux
+    } catch (error) {
+      console.error("Failed to generate agents:", error);
+    }
+  };
 
-    fetchAgents();
-  }, []);
+  const handleRowClick = (agentId: string) => {
+    navigate(`/agent/${agentId}`); // Navigate to the agent detail page
+  };
+
+  const sortedAgents = [...agents].sort((a, b) => b.completedGoals.length - a.completedGoals.length);
 
   return (
-    <div style={styles.container}>
-      <h1>Agent List</h1>
-      <div style={styles.grid}>
-        {agents.map((agent) => (
-          <AgentCard key={agent.id} agent={agent} />
-        ))}
-      </div>
+    <div className="width-sm flex flex-col justify-center bg-sky-800 max-w-screen-lg mx-auto py-8">
+      <h1 className="text-4xl text-center underline pb-8">Agent List</h1>
+      {agents.length === 0 ? (
+        <button
+          className="bg-slate-400 max-w-s mx-auto px-6 py-2 rounded-md text-white hover:bg-slate-500"
+          onClick={handleGenerateAgents}
+        >
+          Generate Agents
+        </button>
+      ) : (
+        <table>
+          <thead>
+            <tr className="bg-gray-700 text-white">
+              <th>Name</th>
+              <th>Age</th>
+              <th>Sex</th>
+              <th>Trait</th>
+              <th>Completed Goals</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedAgents.map((agent) => (
+              <tr
+                key={agent.id}
+                className="cursor-pointer hover:bg-sky-900"
+                onClick={() => handleRowClick(agent.id)}
+              >
+                <td>{agent.name}</td>
+                <td>{agent.age}</td>
+                <td>{agent.sex}</td>
+                <td>{agent.trait}</td>
+                <td>{agent.completedGoals.length}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: "16px",
-    fontFamily: "'Arial', sans-serif",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "16px",
-  },
 };
 
 export default AgentList;
