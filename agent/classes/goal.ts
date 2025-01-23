@@ -2,14 +2,15 @@ import * as fs from "fs";
 import * as path from "path";
 import { Agent } from "./agent";
 
-interface GoalData {
-  description: string;
-  type: string;
+
+export interface CompletedGoal{
+  goal:string;
+  interaction:string;
 }
 
 interface TraitGoals {
   [trait: string]: {
-    goals: GoalData[];
+    goals: Goal[];
   };
 }
 

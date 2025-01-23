@@ -35,6 +35,14 @@ export class Manager{
         return this.currentDay;
     }
 
+    setAgents(agents: Agent[]): void{
+        this.agents = agents;
+    }
+
+    getAgents(): Agent[]{
+        return this.agents;
+    }
+
     private determineAgentActions(): Agent[] {
         let interactingAgents: Agent[] = [];
 

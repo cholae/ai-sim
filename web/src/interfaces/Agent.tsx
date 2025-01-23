@@ -1,3 +1,5 @@
+import { CompletedGoal, Goal } from "./Goal";
+
 export interface Agent {
     id: string;
     name: string;
@@ -7,10 +9,6 @@ export interface Agent {
     trait: string;
     agentRelations: Record<string, unknown>;
     eventMemory: unknown[];
-    currentGoal: {
-      description: string;
-      type: string;
-    };
-    completedGoals: unknown[];
-}
-  
+    currentGoal: Goal;
+    completedGoals: CompletedGoal[];
+} 

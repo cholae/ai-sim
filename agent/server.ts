@@ -8,13 +8,12 @@ const app = express();
 const PORT = 4000;
 app.use(cors());
 
-var agents: Agent[] = [];
 const ai: AI = new AI('mistral')
-const manager = new Manager(agents, ai);
+const manager = new Manager([], ai);
 
 // Example route to fetch agent data
 app.get("/api/generate", (req, res) => {
-  agents = [
+  const agents = [
     new Agent({randomInit:true}),
     new Agent({randomInit:true}),
     new Agent({randomInit:true}),
@@ -22,11 +21,13 @@ app.get("/api/generate", (req, res) => {
     new Agent({randomInit:true}),
     new Agent({randomInit:true})
 ]
+
+  manager.setAgents(agents);
   res.status(200).json(agents);
 });
 
 app.get("/api/agent/:id", (req, res)=>{
-  const agent = agents.find((a)=>a.id === req.params.id);
+  const agent = manager.getAgents().find((a)=>a.id === req.params.id);
   if(agent){
     res.status(200).json(agent)
   }else{
@@ -36,12 +37,12 @@ app.get("/api/agent/:id", (req, res)=>{
 
 app.get("/api/progress", async (req,res)=>{
   try {
-    agents = await manager.progressDay();
+    await manager.progressDay();
 
     res.status(200).json({
       message: `Day ${manager.getCurrentDay()} progressed.`,
       currentDay: manager.getCurrentDay(),
-      agents,
+      agents: manager.getAgents(),
     });
   } catch (error:any) {
     console.error("Error progressing day:", error);

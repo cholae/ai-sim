@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { Goal } from "./goal";
+import { CompletedGoal, Goal } from "./goal";
 import { Relationship } from './relationship';
 import { Memory } from './memory';
 import { RelationshipType } from '../enums/relationshipType';
@@ -16,7 +16,7 @@ export class Agent {
   agentRelations: Record<string, Relationship> = {};
   eventMemory: string[] = [];
   currentGoal: Goal | null = null;
-  completedGoals: Goal[] = [];
+  completedGoals: CompletedGoal[] = [];
 
   constructor({
     id = uuid(),
@@ -53,7 +53,7 @@ export class Agent {
   randomizeAgent(): void {
     this.id = uuid()
     this.sex = faker.person.sex() as "male" | "female";
-    this.name = faker.person.fullName({sex: this.sex});
+    this.name = faker.person.firstName(this.sex) + " " + faker.person.lastName(this.sex);
     this.age = Math.floor(Math.random() * (45 - 18 + 1)) + 18;
     this.description = `You are ${this.name}, a ${this.age}-year-old ${this.sex}.`;
     this.trait = this.assignRandomTrait();
@@ -88,7 +88,7 @@ export class Agent {
     currentRelation.addNewMemory(interactionResponse.description,interactionResponse[this.id].memoryStrength);
 
     if(interactionResponse[this.id].achievedGoal == 'true' || interactionResponse[this.id].achievedGoal == true){
-      this.completedGoals.push(this.currentGoal!);
+      this.completedGoals.push({goal: this.currentGoal?.description!, interaction: interactionResponse.description});
       this.currentGoal = Goal.assignGoalBasedOnTrait(this);
     }
   }
