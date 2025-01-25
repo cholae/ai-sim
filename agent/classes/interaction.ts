@@ -1,6 +1,7 @@
 import { Action } from "../interfaces/action";
 import { Agent } from "./agent";
-import { AI } from "../scripts/ai";
+import { AI } from "./ai";
+import { Goal } from "./goal";
 
 export class Interaction implements Action{
     private agentA: Agent;
@@ -15,67 +16,82 @@ export class Interaction implements Action{
         this.agentA.linkAgent(this.agentB);
 
         const prompt = this.createInteractionPrompt(this.agentA, this.agentB)
-        let response:any = await ai.generateInteraction(prompt);
+        let response:any = await ai.generateFromPrompt(prompt);
         console.log(response);
     
-        // Apply relationship change
-        this.agentA.updateRelationship(this.agentB, response);
-        this.agentB.updateRelationship(this.agentA, response);
+        // Apply relationship change, check if goal was completed
+        const updateAgentA = this.agentA.checkInteraction(this.agentB, response[this.agentA.id]);
+        const updateAgentB = this.agentB.checkInteraction(this.agentA, response[this.agentB.id]);
+
+        //check if we need to update goals
+        try{
+          if(updateAgentA){
+            let goalA: any = await ai.generateFromPrompt(Goal.createGoalBasedOnTraitPrompt(this.agentA));
+            console.log(goalA);
+            this.agentA.setGoal(new Goal(goalA.description, goalA.milestones))
+          }
+          if(updateAgentB){
+            let goalB:any = await ai.generateFromPrompt(Goal.createGoalBasedOnTraitPrompt(this.agentB));
+            console.log(goalB);
+            this.agentB.setGoal(new Goal(goalB.description, goalB.milestones))
+          }
+        }catch (error:any){
+          console.warn({message:"failed to add new goal", error: error})
+        }
     }
 
     createInteractionPrompt(agentA: Agent, agentB: Agent): string {
-        const agentAMemories = agentA.agentRelations[agentB.id].interactionMemory
-            .sort((a, b) => b.strength - a.strength) // Sort memories strongest to weakest
-            .map(memory => `- ${memory.description}`)
-            .join("\n");
-    
-        const agentBMemories = agentB.agentRelations[agentA.id].interactionMemory
-            .sort((a, b) => b.strength - a.strength)
-            .map(memory => `- ${memory.description}`)
-            .join("\n");
-    
-        return `
-        Agent A:
-        - Name: ${agentA.name}
-        - Id: ${agentA.id}
-        - Description: ${agentA.describe()}
-        - Relationship with ${agentB.name}: You ${agentA.agentRelations[agentB.id].relation} them.
-        - Memories of ${agentB.name}: ${agentAMemories}
-        
-        Agent B:
-        - Name: ${agentB.name}
-        - Id: ${agentB.id}
-        - Description: ${agentB.describe()}
-        - Relationship with ${agentA.name}: You ${agentB.agentRelations[agentA.id].relation} them.
-        - Memories of ${agentA.name}: ${agentBMemories}
-        
-        ### Context:
-        - The relationship score between two agents ranges from -100 to +100. A +100 indicates strong love or friendship, while -100 indicates extreme hatred. These changes should occur gradually and not be extreme in one interaction.
-        - Use each agent's personality traits, memories, and goals to simulate the interaction and determine outcomes.
-        - For each interaction, calculate:
-          1. **Relationship Change Value:** How the interaction affects the relationship score.
-          2. **Memory Strength:** Use the absolute value of the Relationship Change Value.
-          3. **Achieved Goal:** Indicate if the agent achieved their current goal.
-        
-        ### Task:
-        Describe an interaction between ${agentA.name} and ${agentB.name} (e.g., conversation, activity, or conflict). Use their traits and context to decide the outcome.
-        
-        ### Output Format:
-        \`\`\`json
-        {
-          "description": "Summarize the interaction, reasoning for goal achievement, and relationship change.",
-          "${agentA.id}": {
-            "relationshipChange": <number>,
-            "memoryStrength": <absolute value of relationshipChange>,
-            "achievedGoal": true/false
-          },
-          "${agentB.id}": {
-            "relationshipChange": <number>,
-            "memoryStrength": <absolute value of relationshipChange>,
-            "achievedGoal": true/false
-          }
+      const prompt = `
+      Agent A:
+          - Name: ${agentA.name}
+          - Id: ${agentA.id}
+          - ${agentA.goal?.describe() + " Has your goal met its milestones? **" + agentA.goal?.milestonesMet + "**"}
+          - Description: ${agentA.describe()}
+          - Relationship with ${agentB.name}: You ${agentA.agentRelations[agentB.id].relation} them.
+          - Memories of ${agentB.name}: ${agentA.agentRelations[agentB.id].describeMemories() || "No significant memories yet."}
+      
+      Agent B:
+          - Name: ${agentB.name}
+          - Id: ${agentB.id}
+          - ${agentB.goal?.describe() + " Has your goal met its milestones? **" + agentB.goal?.milestonesMet + "**"}
+          - Description: ${agentB.describe()}
+          - Relationship with ${agentA.name}: You ${agentB.agentRelations[agentA.id].relation} them.
+          - Memories of ${agentA.name}: ${agentB.agentRelations[agentA.id].describeMemories() || "No significant memories yet."}
+      
+      ### Context:
+      - **Relationship Score:** Ranges from -100 (extreme hatred) to +100 (strong love). Changes occur gradually and are not extreme in one interaction, unless the interacton requires it (e.g. attempted murder).
+      
+      ### Task:
+      1. **Describe the Interaction**: Use agent information to summarize an interaction (e.g., conversation, activity, or conflict).
+      2. **Evaluate Milestone Completion**: Milestones are completed only if:
+          - **Alignment**: The interaction directly contributes to BOTH agent's milestone requirements.
+          - **Relation**: The agents have POSITIVE relations.
+          - YOU MUST EVALUATE MILESTONE COMPLETION FOR **BOTH AGENTS** DURING THIS INTERACTION.
+      3. **Failure**:
+          - If a milestone or goal attempt fails, provide logical consequences:
+            - Example: deteriorating relationships or reduced trust between agents.
+          - Someone with a trait or job unrelated to a milestone **CANNOT** help completed it. (e.g. a Bard cannot complete Builder tasks)
+      
+      ### Output Format:
+      \`\`\`json
+      {
+        "description": "Summarize the interaction, reasoning for milestone/goal achievement, and relationship change.",
+        "${agentA.id}": {
+          "relationshipChange": <number>,
+          "memoryStrength": <absolute value of relationshipChange>,
+          "achievedMilestone": true/false value for if ${agentA.name} achieved their milestone of ${agentA.goal?.currentMilestone} **DURING** this interaction,
+          "achievedGoal": true/false value for if ${agentA.name} achieved their milestone of ${agentA.goal?.description} **DURING** this interaction,
+        },
+        "${agentB.id}": {
+          "relationshipChange": <number>,
+          "memoryStrength": <absolute value of relationshipChange>,
+          "achievedMilestone": true/false value for if ${agentB.name} achieved their milestone of ${agentB.goal?.currentMilestone} **DURING** this interaction,
+          "achievedGoal": true/false value for if ${agentB.name} achieved their milestone of ${agentB.goal?.description} **DURING** this interaction,
         }
-        
-            `;
+      }
+      \`\`\`
+      `;
+      console.log(prompt);
+      return prompt; 
     }
 }

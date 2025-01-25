@@ -9,6 +9,6 @@ export interface Agent {
     trait: string;
     agentRelations: Record<string, unknown>;
     eventMemory: unknown[];
-    currentGoal: Goal;
+    goal: Goal;
     completedGoals: CompletedGoal[];
 } 

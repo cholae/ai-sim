@@ -43,7 +43,8 @@ const AgentDetails = () => {
           <p><strong>Sex:</strong> {agent.sex}</p>
           <p><strong>Trait:</strong> {agent.trait}</p>
           <p><strong>Description:</strong> {agent.description}</p>
-          <p><strong>Current Goal:</strong> {agent.currentGoal.description}</p>
+          <p><strong>Current Goal:</strong> {agent.goal.description}</p>
+          <p><strong>Current Milestone:</strong> {agent.goal.currentMilestone?.description}</p>
           <p><strong>Completed Goals:</strong> {agent.completedGoals.length}</p>
         </div>
 

@@ -1,9 +1,11 @@
 import { faker } from '@faker-js/faker';
-import { CompletedGoal, Goal } from "./goal";
+import { CompletedGoal, Goal, CompletedMilestone } from "./goal";
 import { Relationship } from './relationship';
-import { Memory } from './memory';
 import { RelationshipType } from '../enums/relationshipType';
 import { v4 as uuid } from 'uuid';
+import * as fs from "fs";
+import * as path from "path";
+import { InteractionResponse } from '../interfaces/interactionResponse';
 
 export class Agent {
   id!: string;
@@ -15,8 +17,9 @@ export class Agent {
   currentLocation!: string;
   agentRelations: Record<string, Relationship> = {};
   eventMemory: string[] = [];
-  currentGoal: Goal | null = null;
+  goal: Goal | null = null;
   completedGoals: CompletedGoal[] = [];
+  world: string = "";
 
   constructor({
     id = uuid(),
@@ -27,6 +30,7 @@ export class Agent {
     trait = null,
     location = "",
     randomInit = false,
+    goal = null
   }: {
     id?: string;
     name?: string | null;
@@ -36,9 +40,10 @@ export class Agent {
     trait?: string | null;
     location?: string;
     randomInit?: boolean;
+    goal?: Goal | null;
   } = {}) {
     if (randomInit) {
-      this.randomizeAgent();
+      this.randomizeAgent("You live in a high fantasy world.");
     } else {
       this.id = id;
       this.name = name!;
@@ -47,29 +52,39 @@ export class Agent {
       this.age = age;
       this.currentLocation = location;
       this.trait = trait;
+      this.goal = goal;
     }
   }
 
-  randomizeAgent(): void {
+  randomizeAgent(world:string): void {
     this.id = uuid()
     this.sex = faker.person.sex() as "male" | "female";
     this.name = faker.person.firstName(this.sex) + " " + faker.person.lastName(this.sex);
     this.age = Math.floor(Math.random() * (45 - 18 + 1)) + 18;
     this.description = `You are ${this.name}, a ${this.age}-year-old ${this.sex}.`;
     this.trait = this.assignRandomTrait();
-    this.currentGoal = Goal.assignGoalBasedOnTrait(this);
+    this.world = world;
   }
 
-  assignRandomTrait(filename: string = "traits-and-goals.json"): string {
-    const traitGoals = Goal.loadTraitGoals(filename);
-    const traits = Object.keys(traitGoals);
-    return traits[Math.floor(Math.random() * traits.length)];
+  assignRandomTrait(filename: string = "traits.json"): string {
+    try {
+      const filePath = path.resolve(filename);
+      const fileContent = fs.readFileSync(filePath, "utf8");
+      const traits = JSON.parse(fileContent) as string[];
+      return traits[Math.floor(Math.random() * traits.length)];
+    } catch (error:any) {
+      if (error.code === "ENOENT") {
+        throw new Error(`File '${filename}' not found. Ensure the file exists and the path is correct.`);
+      } else if (error instanceof SyntaxError) {
+        throw new Error(`File '${filename}' contains invalid JSON. Please check the file format.`);
+      } else {
+        throw error;
+      }
+    }
   }
 
   describe(): string {
-    return `${this.description} Your personality traits are: [${this.trait}]. You have the current goal of ${
-      this.currentGoal?.description ?? "none"
-    }.`;
+    return `${this.description} Your personality traits are: [${this.trait}].`;
   }
   
   linkAgent(agent: Agent): void {
@@ -81,16 +96,35 @@ export class Agent {
     }
   }
 
-  updateRelationship(agent: Agent , interactionResponse:any): void{
-    const currentRelation = this.agentRelations[agent.id];
-    currentRelation.relationRating = Math.min(100, Math.max(-100, currentRelation.relationRating + interactionResponse[this.id].relationshipChange));
-    currentRelation.relation = this.calculateRelation(currentRelation.relationRating) as RelationshipType;
-    currentRelation.addNewMemory(interactionResponse.description,interactionResponse[this.id].memoryStrength);
+  checkInteraction(agent: Agent , interactionResponse: InteractionResponse): boolean{
+    try{
+      const currentRelation = this.agentRelations[agent.id];
+      currentRelation.relationRating = Math.min(100, Math.max(-100, currentRelation.relationRating + interactionResponse.relationshipChange));
+      currentRelation.relation = this.calculateRelation(currentRelation.relationRating) as RelationshipType;
+      currentRelation.addNewMemory(interactionResponse.description,interactionResponse.memoryStrength);
 
-    if(interactionResponse[this.id].achievedGoal == 'true' || interactionResponse[this.id].achievedGoal == true){
-      this.completedGoals.push({goal: this.currentGoal?.description!, interaction: interactionResponse.description});
-      this.currentGoal = Goal.assignGoalBasedOnTrait(this);
+      if(agent.goal && interactionResponse.achievedMilestone){
+        if(!this.goal?.milestonesMet){
+          agent.goal.completedMilestones.push({description: agent.goal.currentMilestone!.description, interaction: interactionResponse.description});
+        }
+        agent.goal.currentMilestone = agent.goal.remainingMilestones?.pop() || null
+        if (agent.goal.currentMilestone === null) 
+          agent.goal.milestonesMet = true
+      }
+
+      if(interactionResponse.achievedGoal == true){
+        this.completedGoals.push({goal: this.goal!.description!, interaction: interactionResponse.description, completedMilestones: this.goal!.completedMilestones});
+        return true;
+      }
+      return false;
+    } catch(error: any){
+      console.warn(error);
+      return false;
     }
+  }
+
+  setGoal(newGoal: Goal){
+    this.goal = newGoal;
   }
 
   determineAction(){

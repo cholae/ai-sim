@@ -7,7 +7,7 @@ export class AI {
     this.model = model;
   }
 
-  async generateInteraction(prompt: string): Promise<string> {
+  async generateFromPrompt(prompt: string): Promise<string> {
     try {
       const response = await ollama.generate({
         model: this.model,

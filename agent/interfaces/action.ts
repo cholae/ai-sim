@@ -1,4 +1,4 @@
-import { AI } from "../scripts/ai";
+import { AI } from "../classes/ai";
 
 export interface Action{
     execute(ai:AI): Promise<void>;

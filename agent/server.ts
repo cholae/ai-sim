@@ -1,8 +1,9 @@
 import express from "express";
 import { Agent } from "./classes/agent";
 import cors from "cors";
-import { Manager } from "./scripts/manager";
-import { AI } from "./scripts/ai";
+import { Manager } from "./classes/manager";
+import { AI } from "./classes/ai";
+import { Goal } from "./classes/goal";
 
 const app = express();
 const PORT = 4000;
@@ -12,18 +13,16 @@ const ai: AI = new AI('mistral')
 const manager = new Manager([], ai);
 
 // Example route to fetch agent data
-app.get("/api/generate", (req, res) => {
-  const agents = [
-    new Agent({randomInit:true}),
-    new Agent({randomInit:true}),
-    new Agent({randomInit:true}),
-    new Agent({randomInit:true}),
-    new Agent({randomInit:true}),
-    new Agent({randomInit:true})
-]
-
-  manager.setAgents(agents);
-  res.status(200).json(agents);
+app.get("/api/generate", async (req, res) => {
+  const numAgents = parseInt(req.query.num as string || "0")
+  if(numAgents === 0){
+    res.status(400).json({error:"request a number of agents larger than 1"});
+  }
+  else{
+    await manager.createAgents(numAgents);
+    res.status(200).json(manager.getAgents());
+  }
+  
 });
 
 app.get("/api/agent/:id", (req, res)=>{
