@@ -1,18 +1,26 @@
-import { useState } from "react";
-import { CompletedGoal } from "../interfaces/Goal";
+import { useState } from 'react';
+import { CompletedGoal } from '../interfaces/Goal';
 
 interface AgentGoalProps {
-    data: CompletedGoal[];
-  }
+  data: CompletedGoal[];
+}
 
 const AgentGoals = ({ data }: AgentGoalProps) => {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
+  const [openRows, setOpenRows] = useState<{ [key: number]: boolean }>({});
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const toggleRow = (index: number) => {
+    setOpenRows((prev) => ({
+      ...prev,
+      [index]: !prev[index] // Toggle the current row's expanded state
+    }));
   };
 
   const currentData = data.slice(
@@ -21,36 +29,68 @@ const AgentGoals = ({ data }: AgentGoalProps) => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Completed Goals</h1>
-      <table className="table-auto w-full text-left">
+    <div className="mx-auto p-4">
+      <table className="table-auto w-full text-left border-collapse">
         <thead>
           <tr>
-            <th className="px-4 py-2 text-lg font-semibold">Description</th>
-            <th className="px-4 py-2 text-lg font-semibold">Interaction</th>
-            <th className="px-4 py-2 text-lg font-semibold">Completed Milestones</th>
+            <th className="px-4 py-2 text-lg font-semibold border-b">
+              Description
+            </th>
+            <th className="px-4 py-2 text-lg font-semibold border-b">
+              Interaction
+            </th>
+            <th className="px-4 py-2 text-lg font-semibold border-b">
+              Completed Milestones
+            </th>
           </tr>
         </thead>
         <tbody>
           {currentData.map((item, index) => (
-            <tr key={index}>
-              <td className="px-4 py-2">{item.goal}</td>
-              <td className="px-4 py-2">{item.interaction}</td>
-              <td className="px-4 py-2">
-                <ul className="list-disc pl-5">
-                  {item.completedMilestones.map((milestone, i) => (
-                    <li key={i} className="mb-1">
-                      <span className="font-bold">{milestone.description}</span> -{" "}
-                      {milestone.interaction}{" "}
-                    </li>
-                  ))}
-                </ul>
-              </td>
-            </tr>
+            <>
+              {/* Main Row */}
+              <tr
+                key={index}
+                className="cursor-pointer"
+                onClick={() => toggleRow(index)}
+              >
+                <td className="px-4 py-2 border-b">{item.goal}</td>
+                <td className="px-4 py-2 border-b">{item.interaction}</td>
+                <td className="px-1 py-2 border-b text-center">
+                  {item.completedMilestones.length} Milestone(s)
+                  <span className="ml-4 text-red-500 underline">
+                    {openRows[index] ? '▲' : '▼'}
+                  </span>
+                </td>
+              </tr>
+
+              {/* Collapsible Row */}
+              {openRows[index] && (
+                <tr className="border border-2 border-sky-500">
+                  <td colSpan={1} className="px-4 py-2">
+                    {item.completedMilestones.map((milestone, i) => (
+                      <p key={i} className="mb-1">
+                        <span className="font-bold">
+                          {milestone.description}
+                        </span>
+                      </p>
+                    ))}
+                  </td>
+                  <td colSpan={2} className="px-4 py-2">
+                    <ul className="list-disc pl-5">
+                      {item.completedMilestones.map((milestone, i) => (
+                        <p key={i} className="mb-1">
+                          {milestone.interaction}
+                        </p>
+                      ))}
+                    </ul>
+                  </td>
+                </tr>
+              )}
+            </>
           ))}
         </tbody>
       </table>
-  
+
       {/* Pagination Controls */}
       <div className="flex justify-center mt-4 space-x-2">
         <button
@@ -65,7 +105,7 @@ const AgentGoals = ({ data }: AgentGoalProps) => {
             key={page}
             onClick={() => handlePageChange(page)}
             className={`px-3 py-1 ${
-              page === currentPage ? "underline font-semibold" : ""
+              page === currentPage ? 'underline font-semibold' : ''
             }`}
           >
             {page}
@@ -81,7 +121,6 @@ const AgentGoals = ({ data }: AgentGoalProps) => {
       </div>
     </div>
   );
-  
 };
 
 export default AgentGoals;

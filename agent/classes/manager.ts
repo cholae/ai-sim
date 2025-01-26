@@ -54,7 +54,6 @@ export class Manager{
             console.log('Generating agent: ' + i);
             const agent = new Agent({randomInit:true})
             const newGoal: any = await this.ai.generateFromPrompt(Goal.createGoalBasedOnTraitPrompt(agent))
-            console.log(newGoal);
             agent.setGoal(new Goal(newGoal.description, newGoal.milestones))
             this.addAgent(agent);
         } catch(error:any){

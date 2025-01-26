@@ -13,18 +13,12 @@ export class Relationship {
 
     addNewMemory(description: string, strength: number): void {
         const newMemory = new Memory(description, strength);
-    
+        if(newMemory.strength == undefined){
+            console.warn("undefined strength for memory: " + newMemory.description);
+            newMemory.strength = 3;
+        }
         const index = this.findInsertIndex(strength);
         this.interactionMemory.splice(index, 0, newMemory);
-        if (this.interactionMemory.length > 10) {
-            this.interactionMemory.pop();
-        }
-    }
-
-    addMemory(memory: Memory): void {
-        const index = this.findInsertIndex(memory.strength);
-        this.interactionMemory.splice(index, 0, memory);
-
         if (this.interactionMemory.length > 10) {
             this.interactionMemory.pop();
         }
@@ -48,7 +42,6 @@ export class Relationship {
                 high = mid;
             }
         }
-
         return low;
     }
 }
