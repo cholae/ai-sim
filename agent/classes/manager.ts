@@ -1,102 +1,136 @@
-import { Agent } from "../classes/agent";
-import { Interaction } from "../classes/interaction";
-import { Action } from "../interfaces/action";
-import { AI } from "./ai";
-import { Goal } from "./goal";
+import { Agent } from '../classes/agent';
+import { Interaction } from '../classes/interaction';
+import { ActionType } from '../enums/actionType';
+import { Action } from '../interfaces/action';
+import { AI } from './ai';
+import { Goal } from './goal';
+import { GoalAction } from './goalAction';
+import { IndividualAction } from './individualAction';
+import { Milestone } from './milestone';
+import { Settlement } from './settlement';
 
-export class Manager{
-    private currentDay: number;
-    private actionQueue: Action[];
-    private agents: Agent[];
-    private ai: AI;
-    
-    constructor(agents: Agent[], ai:AI) {
-        this.ai = ai;
-        this.currentDay = 0;
-        this.actionQueue = [];
-        this.agents = agents;
-    }
-    
-    async progressDay(): Promise<Agent[]> {
-        this.currentDay++;
-        console.log(`Day ${this.currentDay} begins.`);
-        let interactingAgents =  this.determineAgentActions();
+export class Manager {
+  private currentDay: number;
+  private actionQueue: Action[];
+  private agents: Agent[];
+  private ai: AI;
 
-        this.queueDailyInteractions(interactingAgents)
+  constructor(agents: Agent[], ai: AI) {
+    this.ai = ai;
+    this.currentDay = 0;
+    this.actionQueue = [];
+    this.agents = agents;
+  }
 
-        while (this.actionQueue.length > 0) {
-            const action = this.actionQueue.shift()!;
-            await action.execute(this.ai);
-        }
-       
-        return this.agents;
-    }
+  async progressDay(): Promise<Agent[]> {
+    this.currentDay++;
+    console.log(`Day ${this.currentDay} begins.`);
 
-    getCurrentDay(): number {
-        return this.currentDay;
+    this.queueDailyActions();
+
+    while (this.actionQueue.length > 0) {
+      const action = this.actionQueue.shift()!;
+      const result = await action.execute(this.ai);
+      console.log(result);
     }
 
-    setAgents(agents: Agent[]): void{
-        this.agents = agents;
+    return this.agents;
+  }
+
+  getCurrentDay(): number {
+    return this.currentDay;
+  }
+
+  setAgents(agents: Agent[]): void {
+    this.agents = agents;
+  }
+
+  getAgents(): Agent[] {
+    return this.agents;
+  }
+
+  addAgent(agent: Agent): void {
+    this.agents.push(agent);
+  }
+
+  async createAgents(numAgents: number): Promise<void> {
+    const settlement = new Settlement('Stormwind');
+    for (let i = 0; i < numAgents; i++) {
+      try {
+        console.log('Generating agent: ' + i);
+        const agent = new Agent({ randomInit: true });
+        settlement.assignAgent(agent);
+        agent.home = settlement.name;
+        const newGoal: any = await this.ai.generateFromPrompt(
+          Goal.createGoalBasedOnTraitPrompt(agent)
+        );
+        const parsedMilestones = newGoal.milestones.map(
+          (m: any) => new Milestone(m.description, m.requirements, m.type)
+        );
+        agent.setGoal(new Goal(newGoal.description, parsedMilestones));
+        this.addAgent(agent);
+      } catch (error: any) {
+        console.error({ message: 'failed to create agent', error: error });
+      }
+    }
+  }
+
+  private determineAgentActions(): Map<ActionType, Agent[]> {
+    let agentMap: Map<ActionType, Agent[]> = new Map();
+
+    this.agents.forEach((agent) => {
+      let action = agent.determineAction()!;
+
+      if (!agentMap.has(action)) {
+        agentMap.set(action, []);
+      }
+      agentMap.get(action)?.push(agent);
+    });
+
+    return agentMap;
+  }
+
+  private queueDailyActions(): void {
+    // Get agents grouped by their actions
+    const agentMap = this.determineAgentActions();
+
+    // Queue GoalCompletion actions
+    if (agentMap.has(ActionType.GoalCompletion)) {
+      agentMap.get(ActionType.GoalCompletion)!.forEach((agent) => {
+        this.addAction(new GoalAction(agent));
+      });
     }
 
-    getAgents(): Agent[]{
-        return this.agents;
+    // Queue IndividualActions
+    if (agentMap.has(ActionType.IndividualAction)) {
+      agentMap.get(ActionType.IndividualAction)!.forEach((agent) => {
+        this.addAction(new IndividualAction(agent));
+      });
     }
 
-    addAgent(agent: Agent): void {
-        this.agents.push(agent);
-    }
+    // Queue Interactions (require pairs)
+    if (agentMap.has(ActionType.Interaction)) {
+      let interactionAgents = [...agentMap.get(ActionType.Interaction)!]; // Clone array to avoid modifying the map
 
-    async createAgents(numAgents: number): Promise<void>{
-       for (let i = 0; i < numAgents; i++){
-        try{
-            console.log('Generating agent: ' + i);
-            const agent = new Agent({randomInit:true})
-            const newGoal: any = await this.ai.generateFromPrompt(Goal.createGoalBasedOnTraitPrompt(agent))
-            agent.setGoal(new Goal(newGoal.description, newGoal.milestones))
-            this.addAgent(agent);
-        } catch(error:any){
-            console.error({message: "failed to create agent", error:error})
-        }
-       }
-    }
+      while (interactionAgents.length > 1) {
+        const agentA = interactionAgents.pop()!;
+        const randomIndex = Math.floor(
+          Math.random() * interactionAgents.length
+        );
+        const agentB = interactionAgents.splice(randomIndex, 1)[0];
 
-    private determineAgentActions(): Agent[] {
-        let interactingAgents: Agent[] = [];
+        this.addAction(new Interaction(agentA, agentB));
+      }
 
-        this.agents.forEach(agent => {
-            let action = agent.determineAction();
-            if(action == 'interaction'){
-                interactingAgents.push(agent);
-            }
-        });
+      // If one agent is left, they perform a solo interaction
+      if (interactionAgents.length === 1) {
+        this.addAction(new IndividualAction(interactionAgents.pop()!));
+      }
+    }
+  }
 
-        return interactingAgents;
-    }
-    
-    private queueDailyInteractions(agents: Agent[]): void {
-        let remainingAgentCount = agents.length;
-        while (remainingAgentCount > 1) {
-            const agentA = agents.pop()!;
-            remainingAgentCount--;
-        
-            const randomIndex = Math.floor(Math.random() * remainingAgentCount);
-            const agentB = agents.splice(randomIndex, 1)[0];
-            remainingAgentCount--;
-        
-            // Add the interaction
-            this.addAction(new Interaction(agentA, agentB));
-        }
-    
-        // Handle case where there's one leftover agent
-        if (remainingAgentCount === 1) {
-            agents.pop();
-        }
-    }
-    
-    // Add an action to the queue
-    addAction(action: Action): void {
-        this.actionQueue.push(action);
-    } 
+  // Add an action to the queue
+  addAction(action: Action): void {
+    this.actionQueue.push(action);
+  }
 }

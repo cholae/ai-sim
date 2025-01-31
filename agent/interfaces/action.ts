@@ -1,5 +1,5 @@
-import { AI } from "../classes/ai";
+import { AI } from '../classes/ai';
 
-export interface Action{
-    execute(ai:AI): Promise<void>;
+export interface Action {
+  execute(ai: AI): Promise<string>;
 }

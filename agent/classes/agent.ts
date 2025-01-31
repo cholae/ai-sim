@@ -1,11 +1,13 @@
 import { faker } from '@faker-js/faker';
-import { CompletedGoal, Goal, CompletedMilestone } from './goal';
+import { CompletedGoal, Goal } from './goal';
 import { Relationship } from './relationship';
 import { RelationshipType } from '../enums/relationshipType';
 import { v4 as uuid } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
 import { InteractionResponse } from '../interfaces/interactionResponse';
+import { Settlement } from './settlement';
+import { ActionType } from '../enums/actionType';
 
 export class Agent {
   id!: string;
@@ -19,6 +21,8 @@ export class Agent {
   eventMemory: string[] = [];
   goal: Goal | null = null;
   completedGoals: CompletedGoal[] = [];
+  home: string;
+  job!: string;
   world: string = '';
 
   constructor({
@@ -30,7 +34,9 @@ export class Agent {
     trait = null,
     location = '',
     randomInit = false,
-    goal = null
+    goal = null,
+    home = '',
+    job = ''
   }: {
     id?: string;
     name?: string | null;
@@ -41,8 +47,11 @@ export class Agent {
     location?: string;
     randomInit?: boolean;
     goal?: Goal | null;
+    home?: string;
+    job?: string;
   } = {}) {
     if (randomInit) {
+      this.home = 'wandering';
       this.randomizeAgent('You live in a high fantasy world.');
     } else {
       this.id = id;
@@ -53,6 +62,8 @@ export class Agent {
       this.currentLocation = location;
       this.trait = trait;
       this.goal = goal;
+      this.home = home;
+      this.job = job;
     }
   }
 
@@ -62,8 +73,9 @@ export class Agent {
     this.name =
       faker.person.firstName(this.sex) + ' ' + faker.person.lastName(this.sex);
     this.age = Math.floor(Math.random() * (45 - 18 + 1)) + 18;
-    this.description = `You are ${this.name}, a ${this.age}-year-old ${this.sex}.`;
+    this.description = `${this.name}, a ${this.age}-year-old ${this.sex}.`;
     this.trait = this.assignRandomTrait();
+    this.job = this.assignRandomJob();
     this.world = world;
   }
 
@@ -88,8 +100,29 @@ export class Agent {
     }
   }
 
+  assignRandomJob(filename: string = 'jobs.json'): string {
+    try {
+      const filePath = path.resolve(filename);
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const traits = JSON.parse(fileContent) as string[];
+      return traits[Math.floor(Math.random() * traits.length)];
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        throw new Error(
+          `File '${filename}' not found. Ensure the file exists and the path is correct.`
+        );
+      } else if (error instanceof SyntaxError) {
+        throw new Error(
+          `File '${filename}' contains invalid JSON. Please check the file format.`
+        );
+      } else {
+        throw error;
+      }
+    }
+  }
+
   describe(): string {
-    return `${this.description} Your personality traits are: [${this.trait}].`;
+    return `${this.description} Your personality traits are: [${this.trait}]. Your current job is: **${this.job}**`;
   }
 
   linkAgent(agent: Agent): void {
@@ -110,7 +143,7 @@ export class Agent {
   checkInteraction(
     agent: Agent,
     interactionResponse: InteractionResponse
-  ): boolean {
+  ): void {
     try {
       const currentRelation = this.agentRelations[agent.id];
       currentRelation.relationRating = Math.min(
@@ -129,7 +162,7 @@ export class Agent {
         interactionResponse.memoryStrength
       );
 
-      if (agent.goal && interactionResponse.achievedMilestone) {
+      if (agent.goal && interactionResponse.milestoneTotalProgress >= 1) {
         if (!this.goal?.milestonesMet) {
           agent.goal.completedMilestones.push({
             description: agent.goal.currentMilestone!.description,
@@ -140,20 +173,13 @@ export class Agent {
           agent.goal.remainingMilestones?.pop() || null;
         if (agent.goal.currentMilestone === null)
           agent.goal.milestonesMet = true;
+      } else {
+        agent.goal?.currentMilestone?.progressReasons.push(
+          interactionResponse.description
+        );
       }
-
-      if (interactionResponse.achievedGoal == true) {
-        this.completedGoals.push({
-          goal: this.goal!.description!,
-          interaction: interactionResponse.description,
-          completedMilestones: this.goal!.completedMilestones
-        });
-        return true;
-      }
-      return false;
     } catch (error: any) {
       console.warn(error);
-      return false;
     }
   }
 
@@ -162,7 +188,9 @@ export class Agent {
   }
 
   determineAction() {
-    return 'interaction';
+    console.log(this.goal?.currentMilestone);
+    if (!this.goal?.milestonesMet) return this.goal?.currentMilestone?.type;
+    return ActionType.GoalCompletion;
   }
 
   private calculateRelation(relationRating: number): string {

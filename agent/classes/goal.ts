@@ -1,19 +1,10 @@
-import { Agent } from "./agent";
+import { Agent } from './agent';
+import { Milestone, CompletedMilestone } from './milestone';
 
-export interface CompletedGoal{
-  goal:string;
-  interaction:string;
+export interface CompletedGoal {
+  goal: string;
+  interaction: string;
   completedMilestones: CompletedMilestone[];
-}
-
-export interface CompletedMilestone{
-  description:string;
-  interaction:string;
-}
-
-interface Milestone{
-  description:string; //description of goal, e.g. make a friend
-  requirements:string; //requirements to succeed, e.g. this new friend must be a leader of a group
 }
 
 export class Goal {
@@ -22,29 +13,47 @@ export class Goal {
   remainingMilestones: Milestone[];
   completedMilestones: CompletedMilestone[]; //other milestones required to complete goal
   milestonesMet: boolean;
-  
+
   constructor(description: string, milestones: Milestone[]) {
-    if (!description || typeof description !== "string") {
+    if (!description || typeof description !== 'string') {
       console.error(description);
-      throw new Error("Invalid goal description.");
+      throw new Error('Invalid goal description.');
     }
 
-    if (!Array.isArray(milestones) || milestones.some(m => !m.description || typeof m.description !== "string")) {
+    if (
+      !Array.isArray(milestones) ||
+      milestones.some(
+        (m) => !m.description || typeof m.description !== 'string'
+      )
+    ) {
       console.error(milestones);
-      throw new Error("Invalid milestones array.");
+      throw new Error('Invalid milestones array.');
     }
     this.description = description;
     this.remainingMilestones = milestones;
     this.currentMilestone = milestones[0];
-    this.completedMilestones = []; 
+    this.completedMilestones = [];
     this.milestonesMet = false;
   }
 
   describe(): string {
+    const completedMilestoneDescriptions =
+      this.completedMilestones.length > 0
+        ? this.completedMilestones.map((m) => m.description).join(', ')
+        : 'none';
+
     return `
-      Major Goal: ${this.description}
-      Current Milestone: ${this.currentMilestone?.description || "none"})
+      Goal: ${this.description}
+      Completed Milestones: ${completedMilestoneDescriptions})
     `.trim();
+  }
+
+  complete(interaction: string): CompletedGoal {
+    return {
+      goal: this.description,
+      interaction: interaction,
+      completedMilestones: this.completedMilestones
+    };
   }
 
   static createGoalBasedOnTraitPrompt(agent: Agent): string {
@@ -56,8 +65,9 @@ export class Goal {
     1. The **goal description** should clearly convey a unique, high-level ambition or aspiration.
     2. Each **milestone** must:
        - Have a clear **description** of the task.
-       - Include specific **requirements** needed to complete it.
-    3. Order milestones logically (e.g., meet an ally, gather materials, complete a final task).
+       - Include specific **requirements** needed to complete it, which are binary in their resolution.
+       - include a actionType - does this milestone require interaction with other agents, or individual actions? (e.g. explore a cave vs. befriend an engineer)
+    3. Order milestones logically (e.g., meet a person with a certain skill set, gather materials, use both the person and materials to finish a task).
     
     ### Output Format:
     Return a **JSON object** in the following structure:
@@ -68,11 +78,12 @@ export class Goal {
         {
           "description": "Brief description of this milestone (e.g., Meet a skilled builder).",
           "requirements": "Specific requirements for success (e.g., Build a friendly relationship with a builder).",
+          "type:" "interaction" ||(or) "individualAction"
         },
         ...
       ]
     }
     \`\`\`
-    `
+    `;
   }
 }

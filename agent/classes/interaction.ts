@@ -12,133 +12,77 @@ export class Interaction implements Action {
     this.agentB = agentB;
   }
 
-  async execute(ai: AI): Promise<void> {
+  async execute(ai: AI): Promise<string> {
     this.agentA.linkAgent(this.agentB);
 
     const prompt = this.createInteractionPrompt(this.agentA, this.agentB);
     let response: any = await ai.generateFromPrompt(prompt);
 
-    const updateAgentA = this.agentA.checkInteraction(this.agentB, {
+    this.agentA.checkInteraction(this.agentB, {
       ...response[this.agentA.id],
       description: response.description
     });
 
-    const updateAgentB = this.agentB.checkInteraction(this.agentA, {
+    this.agentB.checkInteraction(this.agentA, {
       ...response[this.agentB.id],
       description: response.description
     });
-
-    //check if we need to update goals
-    try {
-      if (updateAgentA) {
-        let goalA: any = await ai.generateFromPrompt(
-          Goal.createGoalBasedOnTraitPrompt(this.agentA)
-        );
-        this.agentA.setGoal(new Goal(goalA.description, goalA.milestones));
-        console.log(
-          '\x1b[32m%s\x1b[0m',
-          `New Goal Set for ${this.agentA.name}. Goal: ${this.agentA.goal?.description}.`
-        );
-      }
-      if (updateAgentB) {
-        let goalB: any = await ai.generateFromPrompt(
-          Goal.createGoalBasedOnTraitPrompt(this.agentB)
-        );
-        this.agentB.setGoal(new Goal(goalB.description, goalB.milestones));
-        console.log(
-          '\x1b[32m%s\x1b[0m',
-          `New Goal Set for ${this.agentB.name}. Goal: ${this.agentB.goal?.description}.`
-        );
-      }
-    } catch (error: any) {
-      console.warn({ message: 'failed to add new goal', error: error });
-    }
+    return response.description;
   }
 
   createInteractionPrompt(agentA: Agent, agentB: Agent): string {
+    //prettier-ignore
     const prompt = `
+      ### Task:
+        Determine if an interaction between **${agentA.name}** and **${agentB.name}** contributes to either agent's current milestone. 
+      ### Milestone Validation Rules:
+        1. **Milestone Completion Conditions**:
+          - The interaction must be **directly relevant** to the milestone's **description**.
+          - The milestone's **specific requirements** must be met. Simply talking is NOT enough.
+          - A milestone should **not** be marked as complete (milestoneTotalProgress = 1) if only **partial** progress is made.
+
+        2. **Partial Progress**:
+          - If an interaction contributes toward a milestone **but does not fully meet requirements**, track progress towards the milestone.
+
+        3. **Failure Logic**:
+          - If the interaction is **irrelevant** to the milestone, the milestone must **not** progress.
+          - If agents have **low relationship scores**, interactions are more likely to fail.
+
       Agent A:
           - Name: ${agentA.name}
           - Id: ${agentA.id}
-          - ${
-            agentA.goal?.describe() +
-            ' Has your goal met its milestones? **' +
-            agentA.goal?.milestonesMet +
-            '**'
-          }
+          - Current Milestone Context: ${agentA.goal?.currentMilestone?.describe() || "none"}
           - Description: ${agentA.describe()}
-          - Relationship with ${agentB.name}: You ${
-      agentA.agentRelations[agentB.id].relation
-    } them.
-          - Memories of ${agentB.name}: ${
-      agentA.agentRelations[agentB.id].describeMemories() ||
+          - Relationship with ${agentB.name}: You ${agentA.agentRelations[agentB.id].relation
+      } them.
+          - Memories of ${agentB.name}: ${agentA.agentRelations[agentB.id].describeMemories() ||
       'No significant memories yet.'
-    }
+      }
       
       Agent B:
           - Name: ${agentB.name}
           - Id: ${agentB.id}
-          - ${
-            agentB.goal?.describe() +
-            ' Has your goal met its milestones? **' +
-            agentB.goal?.milestonesMet +
-            '**'
-          }
+          - Current Milestone Context: ${agentA.goal?.currentMilestone?.describe() || "none"}
           - Description: ${agentB.describe()}
-          - Relationship with ${agentA.name}: You ${
-      agentB.agentRelations[agentA.id].relation
-    } them.
-          - Memories of ${agentA.name}: ${
-      agentB.agentRelations[agentA.id].describeMemories() ||
+          - Relationship with ${agentA.name}: You ${agentB.agentRelations[agentA.id].relation
+      } them.
+          - Memories of ${agentA.name}: ${agentB.agentRelations[agentA.id].describeMemories() ||
       'No significant memories yet.'
-    }
-      
-      ### Context:
-      - **Relationship Score:** Ranges from -100 (extreme hatred) to +100 (strong love). Changes occur gradually and are not extreme in one interaction, unless the interacton requires it (e.g. attempted murder).
-      
-      ### Task:
-      1. **Describe the Interaction**: Use agent information to summarize an interaction (e.g., conversation, activity, or conflict).
-      2. **Evaluate Milestone Completion**: Milestones are completed only if:
-          - **Alignment**: The interaction directly contributes to BOTH agent's milestone requirements.
-          - **Relation**: The agents have POSITIVE relations.
-          - YOU MUST EVALUATE MILESTONE COMPLETION FOR **BOTH AGENTS** DURING THIS INTERACTION.
-      3. **Failure**:
-          - If a milestone or goal attempt fails, provide logical consequences:
-            - Example: deteriorating relationships or reduced trust between agents.
-          - Someone with a trait or job unrelated to a milestone **CANNOT** help completed it. (e.g. a Bard cannot complete Builder tasks)
+      }
       
       ### Output Format:
       \`\`\`json
       {
-        "description": "Summarize the interaction, reasoning for milestone/goal achievement, and relationship change.",
+        "description": "Summarize the interaction, reasoning for milestone progress/failure, and relationship change with the other agent.",
         "${agentA.id}": {
           "relationshipChange": <number>,
           "memoryStrength": <absolute value of relationshipChange>,
-          "achievedMilestone": true/false value for if ${
-            agentA.name
-          } achieved their milestone of ${
-      agentA.goal?.currentMilestone
-    } **DURING** this interaction,
-          "achievedGoal": true/false value for if ${
-            agentA.name
-          } achieved their milestone of ${
-      agentA.goal?.description
-    } **DURING** this interaction,
+          "milestoneTotalProgress: <number between 0 and 1, where 1 means they achieved their milestone>
         },
         "${agentB.id}": {
           "relationshipChange": <number>,
           "memoryStrength": <absolute value of relationshipChange>,
-          "achievedMilestone": true/false value for if ${
-            agentB.name
-          } achieved their milestone of ${
-      agentB.goal?.currentMilestone
-    } **DURING** this interaction,
-          "achievedGoal": true/false value for if ${
-            agentB.name
-          } achieved their milestone of ${
-      agentB.goal?.description
-    } **DURING** this interaction,
-        }
+          "milestoneTotalProgress: <number between 0 and 1, where 1 means they achieved their milestone>
       }
       \`\`\`
       `;
