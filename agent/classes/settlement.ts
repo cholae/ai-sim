@@ -4,18 +4,27 @@ import { Structure } from './structure';
 
 export class Settlement {
   name: string;
-  agents: Agent[];
+  agentIds: string[];
   structures: Structure[];
   groups: Group[];
+  availableJobs: Set<string>;
 
   constructor(name: string) {
     this.name = name;
-    this.agents = [];
+    this.agentIds = [];
     this.structures = [];
     this.groups = [];
+    this.availableJobs = new Set<string>();
   }
 
   assignAgent(agent: Agent) {
-    this.agents.push(agent);
+    this.agentIds.push(agent.id);
+    if (agent.job) {
+      this.availableJobs.add(agent.job);
+    }
+  }
+
+  describeJobs(): string {
+    return [...this.availableJobs].join('\n'); // Convert Set to array and join with newlines
   }
 }

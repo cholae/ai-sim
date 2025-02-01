@@ -9,44 +9,40 @@ export class IndividualAction implements Action {
     this.agent = agent;
   }
   async execute(ai: AI): Promise<string> {
-    const prompt = this.createIndividualActionPrompt(this.agent);
-    let response: any = await ai.generateFromPrompt(prompt);
+    try {
+      const prompt = this.createIndividualActionPrompt(this.agent);
+      let response: any = await ai.generateFromPrompt(prompt);
 
-    if (this.agent.goal && response.milestoneTotalProgress >= 1) {
-      if (!this.agent.goal?.milestonesMet) {
-        this.agent.goal.completedMilestones.push({
-          description: this.agent.goal.currentMilestone!.description,
-          interaction: response.description
-        });
+      if (this.agent.goal && response.milestoneComplete >= 1) {
+        console.log(`${this.agent.name}: milestone complete`);
+        if (!this.agent.goal?.milestonesMet) {
+          this.agent.goal.completedMilestones.push({
+            description: this.agent.goal.currentMilestone!.description,
+            interaction: response.description
+          });
+        }
+        this.agent.goal.currentMilestone =
+          this.agent.goal.remainingMilestones?.pop() ?? null;
+        if (this.agent.goal.currentMilestone === null)
+          this.agent.goal.milestonesMet = true;
       }
-      this.agent.goal.currentMilestone =
-        this.agent.goal.remainingMilestones?.pop() || null;
-      if (this.agent.goal.currentMilestone === null)
-        this.agent.goal.milestonesMet = true;
-    } else {
-      this.agent.goal?.currentMilestone?.progressReasons.push(
-        response.description
-      );
+      return response.description;
+    } catch (error: any) {
+      return `failed to generate interaction for agent ${this.agent.name} | ${this.agent.id}`;
     }
-    return response.description;
   }
 
   createIndividualActionPrompt(agent: Agent): string {
     //prettier-ignore
-    console.log(agent.goal)
     const prompt = `
       ### Task:
         Determine if ${
           agent.name
-        } can progress their milestone through an individual action. 
+        } can achieve their milestone through an individual action.
       ### Milestone Validation Rules:
         1. **Milestone Completion Conditions**:
           - The interaction must be **directly relevant** to the milestone's **description**.
-          - The milestone's **specific requirements** must be met.
-          - A milestone should **not** be marked as complete (milestoneTotalProgress = 1) if only **partial** progress is made.
-
-        2. **Partial Progress**:
-          - If an interaction contributes toward a milestone **but does not fully meet requirements**, track progress towards the milestone by updating milestoneTotalProgress (float).
+          - The milestone's **specific requirements** must be met in order to be completed.
 
       Agent A:
           - Name: ${agent.name}
@@ -59,8 +55,8 @@ export class IndividualAction implements Action {
       ### Output Format:
       \`\`\`json
       {
-        "description": "Summarize the action this agent took and reasoning for milestone progress/failure.",
-        "milestoneTotalProgress: <number between 0 and 1, where 1 means they achieved their milestone>
+        "description": "Summarize the action this agent took and reasoning for milestone completion/failure.",
+        "milestoneComplete: <number 0 or 1, where 1 means they achieved their milestone>
       }
       \`\`\`
       `;

@@ -13,39 +13,40 @@ export class Interaction implements Action {
   }
 
   async execute(ai: AI): Promise<string> {
-    this.agentA.linkAgent(this.agentB);
+    try {
+      this.agentA.linkAgent(this.agentB);
 
-    const prompt = this.createInteractionPrompt(this.agentA, this.agentB);
-    let response: any = await ai.generateFromPrompt(prompt);
+      const prompt = this.createInteractionPrompt(this.agentA, this.agentB);
+      let response: any = await ai.generateFromPrompt(prompt);
 
-    this.agentA.checkInteraction(this.agentB, {
-      ...response[this.agentA.id],
-      description: response.description
-    });
+      this.agentA.checkInteraction(this.agentB, {
+        ...response[this.agentA.id],
+        description: response.description
+      });
 
-    this.agentB.checkInteraction(this.agentA, {
-      ...response[this.agentB.id],
-      description: response.description
-    });
-    return response.description;
+      this.agentB.checkInteraction(this.agentA, {
+        ...response[this.agentB.id],
+        description: response.description
+      });
+      return response.description;
+    } catch (error: any) {
+      console.warn(error);
+      return 'Failed to execute interaction for agent';
+    }
   }
 
   createInteractionPrompt(agentA: Agent, agentB: Agent): string {
     //prettier-ignore
     const prompt = `
       ### Task:
-        Determine if an interaction between **${agentA.name}** and **${agentB.name}** contributes to either agent's current milestone. 
+        Determine if an interaction between **${agentA.name}** and **${agentB.name}** completes either agent's current milestone. 
       ### Milestone Validation Rules:
         1. **Milestone Completion Conditions**:
           - The interaction must be **directly relevant** to the milestone's **description**.
           - The milestone's **specific requirements** must be met. Simply talking is NOT enough.
-          - A milestone should **not** be marked as complete (milestoneTotalProgress = 1) if only **partial** progress is made.
-
-        2. **Partial Progress**:
-          - If an interaction contributes toward a milestone **but does not fully meet requirements**, track progress towards the milestone.
 
         3. **Failure Logic**:
-          - If the interaction is **irrelevant** to the milestone, the milestone must **not** progress.
+          - If the interaction is **irrelevant** to the milestone, the milestone must **not** be achieved.
           - If agents have **low relationship scores**, interactions are more likely to fail.
 
       Agent A:
@@ -73,16 +74,16 @@ export class Interaction implements Action {
       ### Output Format:
       \`\`\`json
       {
-        "description": "Summarize the interaction, reasoning for milestone progress/failure, and relationship change with the other agent.",
+        "description": "Summarize the interaction, reasoning for milestone completion/failure, and relationship change with the other agent.",
         "${agentA.id}": {
           "relationshipChange": <number>,
           "memoryStrength": <absolute value of relationshipChange>,
-          "milestoneTotalProgress: <number between 0 and 1, where 1 means they achieved their milestone>
+          "milestoneComplete: <number 0 or 1, where 1 means they achieved their milestone>
         },
         "${agentB.id}": {
           "relationshipChange": <number>,
           "memoryStrength": <absolute value of relationshipChange>,
-          "milestoneTotalProgress: <number between 0 and 1, where 1 means they achieved their milestone>
+          "milestoneComplete: <number 0 or 1, where 1 means they achieved their milestone>
       }
       \`\`\`
       `;

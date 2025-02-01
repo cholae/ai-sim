@@ -79,7 +79,7 @@ const AgentGoals = ({ data }: AgentGoalProps) => {
                     <ul className="list-disc pl-5">
                       {item.completedMilestones.map((milestone, i) => (
                         <p key={i} className="mb-1">
-                          {milestone.interaction}
+                          <span>{milestone.interaction}</span>
                         </p>
                       ))}
                     </ul>

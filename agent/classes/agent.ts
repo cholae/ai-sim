@@ -21,7 +21,7 @@ export class Agent {
   eventMemory: string[] = [];
   goal: Goal | null = null;
   completedGoals: CompletedGoal[] = [];
-  home: string;
+  home: Settlement | null;
   job!: string;
   world: string = '';
 
@@ -35,7 +35,7 @@ export class Agent {
     location = '',
     randomInit = false,
     goal = null,
-    home = '',
+    home = null,
     job = ''
   }: {
     id?: string;
@@ -47,11 +47,11 @@ export class Agent {
     location?: string;
     randomInit?: boolean;
     goal?: Goal | null;
-    home?: string;
+    home?: Settlement | null;
     job?: string;
   } = {}) {
     if (randomInit) {
-      this.home = 'wandering';
+      this.home = null;
       this.randomizeAgent('You live in a high fantasy world.');
     } else {
       this.id = id;
@@ -62,7 +62,7 @@ export class Agent {
       this.currentLocation = location;
       this.trait = trait;
       this.goal = goal;
-      this.home = home;
+      this.home = null;
       this.job = job;
     }
   }
@@ -159,10 +159,11 @@ export class Agent {
       ) as RelationshipType;
       currentRelation.addNewMemory(
         interactionResponse.description,
-        interactionResponse.memoryStrength
+        interactionResponse.relationshipChange
       );
 
-      if (agent.goal && interactionResponse.milestoneTotalProgress >= 1) {
+      if (agent.goal && interactionResponse.milestoneComplete >= 1) {
+        console.log(`${agent.name}: milestone completed`);
         if (!this.goal?.milestonesMet) {
           agent.goal.completedMilestones.push({
             description: agent.goal.currentMilestone!.description,
@@ -170,13 +171,9 @@ export class Agent {
           });
         }
         agent.goal.currentMilestone =
-          agent.goal.remainingMilestones?.pop() || null;
+          agent.goal.remainingMilestones!.pop() ?? null;
         if (agent.goal.currentMilestone === null)
           agent.goal.milestonesMet = true;
-      } else {
-        agent.goal?.currentMilestone?.progressReasons.push(
-          interactionResponse.description
-        );
       }
     } catch (error: any) {
       console.warn(error);
@@ -188,7 +185,6 @@ export class Agent {
   }
 
   determineAction() {
-    console.log(this.goal?.currentMilestone);
     if (!this.goal?.milestonesMet) return this.goal?.currentMilestone?.type;
     return ActionType.GoalCompletion;
   }

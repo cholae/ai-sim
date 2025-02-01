@@ -14,12 +14,14 @@ export class Manager {
   private actionQueue: Action[];
   private agents: Agent[];
   private ai: AI;
+  private settlements: Settlement[];
 
   constructor(agents: Agent[], ai: AI) {
     this.ai = ai;
     this.currentDay = 0;
     this.actionQueue = [];
     this.agents = agents;
+    this.settlements = [];
   }
 
   async progressDay(): Promise<Agent[]> {
@@ -31,7 +33,6 @@ export class Manager {
     while (this.actionQueue.length > 0) {
       const action = this.actionQueue.shift()!;
       const result = await action.execute(this.ai);
-      console.log(result);
     }
 
     return this.agents;
@@ -54,15 +55,18 @@ export class Manager {
   }
 
   async createAgents(numAgents: number): Promise<void> {
-    const settlement = new Settlement('Stormwind');
+    if (this.settlements.length === 0) {
+      this.settlements.push(new Settlement('Stormwind'));
+    }
+    const settlement = this.settlements[0];
     for (let i = 0; i < numAgents; i++) {
       try {
         console.log('Generating agent: ' + i);
         const agent = new Agent({ randomInit: true });
         settlement.assignAgent(agent);
-        agent.home = settlement.name;
+        agent.home = settlement;
         const newGoal: any = await this.ai.generateFromPrompt(
-          Goal.createGoalBasedOnTraitPrompt(agent)
+          Goal.createGoalBasedOnTraitPrompt(agent, settlement)
         );
         const parsedMilestones = newGoal.milestones.map(
           (m: any) => new Milestone(m.description, m.requirements, m.type)
@@ -73,6 +77,7 @@ export class Manager {
         console.error({ message: 'failed to create agent', error: error });
       }
     }
+    console.log(settlement.describeJobs());
   }
 
   private determineAgentActions(): Map<ActionType, Agent[]> {
@@ -97,6 +102,9 @@ export class Manager {
     // Queue GoalCompletion actions
     if (agentMap.has(ActionType.GoalCompletion)) {
       agentMap.get(ActionType.GoalCompletion)!.forEach((agent) => {
+        console.log(
+          `!!! ${agent.name} is attempting to complete a Major Goal!`
+        );
         this.addAction(new GoalAction(agent));
       });
     }
@@ -124,7 +132,7 @@ export class Manager {
 
       // If one agent is left, they perform a solo interaction
       if (interactionAgents.length === 1) {
-        this.addAction(new IndividualAction(interactionAgents.pop()!));
+        interactionAgents.pop()!;
       }
     }
   }

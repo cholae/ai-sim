@@ -20,7 +20,7 @@ export class GoalAction implements Action {
     try {
       if (agentFinishedGoal) {
         let goalA: any = await ai.generateFromPrompt(
-          Goal.createGoalBasedOnTraitPrompt(this.agent)
+          Goal.createGoalBasedOnTraitPrompt(this.agent, this.agent.home!)
         );
         this.agent.setGoal(new Goal(goalA.description, goalA.milestones));
         console.log(
@@ -28,11 +28,15 @@ export class GoalAction implements Action {
           `New Goal Set for ${this.agent.name}. Goal: ${this.agent.goal?.description}.`
         );
       }
-      return response.description();
+      return response.description;
     } catch (error: any) {
       const message = 'failed to add new goal';
       console.warn({ message: message, error: error });
-      return message;
+      let goalA: any = await ai.generateFromPrompt(
+        Goal.createGoalBasedOnTraitPrompt(this.agent, this.agent.home!)
+      );
+      this.agent.setGoal(new Goal(goalA.description, goalA.milestones));
+      return response.description;
     }
   }
 

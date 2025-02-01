@@ -1,5 +1,6 @@
 import { Agent } from './agent';
 import { Milestone, CompletedMilestone } from './milestone';
+import { Settlement } from './settlement';
 
 export interface CompletedGoal {
   goal: string;
@@ -56,10 +57,17 @@ export class Goal {
     };
   }
 
-  static createGoalBasedOnTraitPrompt(agent: Agent): string {
+  static createGoalBasedOnTraitPrompt(
+    agent: Agent,
+    location: Settlement
+  ): string {
     return `
     ### Task:
-    Generate a creative goal for ${agent.name} based on their **trait** (${agent.trait}) and the **world** (${agent.world}). Return the goal as a high-level **description** with a list of **milestones** required to achieve it.
+    Generate a creative goal for ${agent.name} based on their **trait** (${
+      agent.trait
+    }) and the **world** (${
+      agent.world
+    }). Return the goal as a high-level **description** with a list of **milestones** required to achieve it.
     
     ### Requirements:
     1. The **goal description** should clearly convey a unique, high-level ambition or aspiration.
@@ -68,6 +76,9 @@ export class Goal {
        - Include specific **requirements** needed to complete it, which are binary in their resolution.
        - include a actionType - does this milestone require interaction with other agents, or individual actions? (e.g. explore a cave vs. befriend an engineer)
     3. Order milestones logically (e.g., meet a person with a certain skill set, gather materials, use both the person and materials to finish a task).
+    4. Limit required relationships by "Job" from the list below. For example, do not require a specific person with a job by name, and simply require the job itself.
+    **Job List**:
+    ${location.describeJobs()}
     
     ### Output Format:
     Return a **JSON object** in the following structure:

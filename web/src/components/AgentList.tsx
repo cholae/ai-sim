@@ -15,7 +15,7 @@ const AgentList = () => {
 
   const handleGenerateAgents = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/generate?num=4');
+      const response = await fetch('http://localhost:4000/api/generate?num=10');
       const data: Agent[] = await response.json();
       dispatch(setAgents(data)); // Store agents in Redux
     } catch (error) {
